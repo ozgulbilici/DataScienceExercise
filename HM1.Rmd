@@ -1,0 +1,177 @@
+---
+title: "Data Science and Analytics 2022"
+author: "Hatice Özgül BİLİCİ"
+output: html_document
+---
+
+<style type="text/css">
+  body{
+  font-size: 11pt;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<!--IMPORTANT!!!!! Please fill out the sections that say:"write your code here"-->
+<!--6. For every step above, write down one or two sentences description-->
+
+<br>
+
+```{r echo=T, results='hide', warning=FALSE, message=FALSE}
+  
+  # Import libraries here
+  library(ggplot2)
+  library(tidyverse)
+  library(dplyr)
+  library(plyr)
+```
+
+<br>
+
+### 1) Download the dataset from the link below and import the dataset to R as a dataframe named ***'alcohol_data'***.
+
+<br>
+
+***https://www.kaggle.com/datasets/whenamancodes/alcohol-effects-on-study***
+
+<br>
+```{r}
+  alcohol_data <- read.csv("Maths.csv",sep=",")
+```
+
+<br>
+
+### 2)
+
+#### A) Create a new dataframe as ***'alcohol_data_small'*** from ***'alcohol_data'*** by choosing at least 5 columns (at least one factor and one numeric). 
+
+<br>
+
+```{r}
+  alcohol_data_small <- alcohol_data [, c(2,3,4,6,9,10,11,12,13,19,25,31)]
+```
+
+<br>
+
+#### B) Check and ***re-format*** column/ variable types (factor, charecter, date, integer etc).
+
+<br>
+
+```{r}
+  str(alcohol_data_small)
+```
+
+```{r}
+  alcohol_data_small <- transform(alcohol_data_small ,
+                                  freetime = as.factor(freetime),
+                                  traveltime = as.factor(traveltime)
+                                  )
+```
+
+```{r} 
+  str(alcohol_data_small)
+
+```
+<br>
+
+#### C) By using the given dictionary in kaggle, rename the variables as a more detailed version (e.g. 'F' => 'Female').
+
+<br>
+```{r}
+  alcohol_data_small <- transform(alcohol_data_small,
+                                  sex = as.factor(mapvalues(sex , c("F","M") , c("Female" , "Male"))),
+                                  address = as.factor(mapvalues(address , c("U","R") , c("Urban" , "Rural"))),
+                                  Pstatus = as.factor(mapvalues(Pstatus , c("T", "A") , c("Together", "Apart"))))
+                                  
+                                  
+                                  
+```
+
+```{r}
+summary(alcohol_data_small)
+```
+<br>
+
+### 3) 
+
+#### A) Use ***filter***, ***arrange***, ***select*** to manage your data.
+<br>
+
+```{r}
+    df <- alcohol_data_small %>% 
+                          filter(sex == "Male" & address == "Rural" & age>15)%>%
+                          select(sex, address, age)%>%
+                          arrange(age)
+    df
+```
+
+
+<br>
+
+#### B) Use ***mutate*** or ***transmute*** to create a new dataframe and save it as ***'new_data.csv'*** in your current working directory.
+
+<br>
+
+```{r}
+  df1 <- alcohol_data_small%>%
+                              mutate(newage = age+mean(age))
+  head(df1[c(2)])
+  
+```
+```{r}
+write.csv(x = df1, file = "new_alcohol_data_small.csv", row.names = FALSE)
+```
+<br>
+
+### 4) Use ***'alcohol_data_small'*** dataframe and ggplot2 library to draw the following plots.
+
+<br>
+
+#### A) Draw a ***histogram*** and a ***bar chart*** for any variables and comment about shape and frequency. 
+
+<br>
+
+
+
+```{r}
+  ggplot(alcohol_data_small, aes(G1, fill=freetime)) + 
+  geom_histogram(position="identity", binwidth=2, color="black") +
+  facet_grid(freetime ~ .) + 
+  ggtitle("G1 Skore by Freetime") +
+  xlab("G1 Skore") + 
+  ylab("Count")
+
+```
+
+The grades of those with the least free time seem to be the lowest. However, a linear relationship between free time and G1 score cannot be decisively found.
+
+```{r}
+
+  
+  ggplot(alcohol_data_small, mapping = aes(x=sex, fill=traveltime)) + 
+  geom_bar()+
+  labs(title = "Travel time BarChart by Gender", x="Sex", y="Count")
+```
+As can be seen, the number of those who have home to school travel time <15 is much higher in Female.
+-home to school travel time (numeric: 1 - <15 min., 2 - 15 to 30 min., 3 - 30 min. to 1 hour, or 4 - >1 hour)-
+
+<br>
+
+#### B) Draw a ***boxplot*** and comment about the distribution and outliers. 
+
+<br>
+
+
+```{r ,warning=FALSE}
+  ggplot(alcohol_data_small, mapping = aes(x = freetime, y = age , fill=freetime)) + 
+  geom_boxplot(outlier.size = 4 ,outlier.shape = 20)+
+  stat_summary(fun.y = "mean",shape=4,size=0.5)+
+  labs(title = "Ages by Free Time Hours", x="freetime", y="age")
+```
+
+As the age decreases, we can comment that the free time spent by the student increases. However, there are also outliers at high ages. (can be ignored)
+
+<br>
+<br>

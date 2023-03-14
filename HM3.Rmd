@@ -1,0 +1,198 @@
+---
+title: "CENG 4515 DATA SCIENCE AND ANALYTICS"
+author: "Hatice Özgül Bilici"
+date: "2022-12-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r echo=T, results='hide', warning=FALSE, message=FALSE}
+  library(ggplot2)
+  library(tidyverse)
+  library(dplyr)
+  library(plyr)
+  library(caret)
+  library(corrplot)
+  library(ROCR)
+  library(Rcpp)
+  library(gmodels)
+  library(pROC)
+  library(InformationValue)
+  library(factoextra)
+  library(caret)
+  library(skimr)
+  library(class)
+  library(randomForest)
+
+```
+
+```{r}
+  setwd("C:/Users/ASUS/Desktop/Data")
+```
+# DATA DOWNLOAD
+
+```{r}
+  moledata <- read.csv("mole2_dataset.csv",sep=",")
+```
+
+#factor
+
+```{r}
+  moledata$diagnosis <-  factor(moledata$diagnosis)
+  moledata$image_id <- NULL
+  moledata$X <- NULL
+  moledata$sex <- NULL
+  
+```
+
+
+#1-train
+
+```{r}
+
+  set.seed(200)
+
+  inTrain <- createDataPartition(moledata$diagnosis,p=0.80, list=FALSE)
+
+  moledata_train <- moledata[inTrain , ]
+  moledata_test  <- moledata[-inTrain , ]
+  
+  x = moledata_train[, 1:10]
+  y = moledata_train$diagnosis
+  
+```
+
+
+#2-skim_to_wide
+
+```{r warning = FALSE}
+  skimfunc <- skim_to_wide(moledata_train)
+  skimfunc
+```
+
+
+
+#3-KNN preprocessing knn impute
+
+```{r}
+  preProcess_missingdata_model <- preProcess(moledata_train, method='knnImpute')
+  preProcess_missingdata_model
+  
+  moledata_train <- predict(preProcess_missingdata_model, newdata = moledata_train)
+  
+  preprocess_test <- preProcess(moledata_test, method= 'knnImpute')
+  preprocess_test
+  
+  moledata_test <- predict(preprocess_test, newdata = moledata_test)
+  
+```
+
+
+#4-preprocessing range method
+
+```{r}
+  preProcess_range_model <- preProcess(moledata_train, method='range')
+  moledata_train <- predict(preProcess_range_model, newdata = moledata_train)
+
+  moledata_train$diagnosis <- y
+
+  apply(moledata_train[, 1:10], 2, FUN=function(x){c('min'=min(x), 'max'=max(x))})
+
+```
+
+#5-
+
+```{r warning =FALSE}
+ featurePlot(x = moledata_train[, 1:10], 
+            y = moledata_train$diagnosis, 
+            plot = "density",
+            strip=strip.custom(par.strip.text=list(cex=.7)),
+            scales = list(x = list(relation="free"), 
+                          y = list(relation="free")))
+```
+
+
+#6
+
+#a)
+```{r}
+
+  control <- trainControl(method = "repeatedcv", number = 5, repeats = 3)
+  tune_grid <- expand.grid(k = 3:13)
+  model <- train(diagnosis ~ ., data = moledata_train , method = "knn", trControl = control, tuneGrid = tune_grid)
+  model
+
+
+```
+#b)
+```{r}
+
+  predictions_knn <- predict(model, moledata_test)
+  predictions_knn
+
+```
+#c)
+```{r}
+
+  confusionMatrix(moledata_test$diagnosis , predictions_knn)
+
+```
+
+#7
+
+#a)
+```{r}
+
+  control <- trainControl(method = "cv", number = 5)
+
+  model_rf <- train(diagnosis ~ ., data = moledata_train, method = "rf", trControl = control)
+  model_rf
+
+```
+#b)
+```{r}
+
+  predictions_rf <- predict(model_rf, moledata_test)
+  predictions_rf
+
+```
+#c)
+```{r}
+
+  confusionMatrix(moledata_test$diagnosis, predictions_rf)
+
+```
+
+
+#8
+
+#a)
+```{r warning = FALSE}
+  control <- trainControl(method = "cv", number = 5)
+
+  model_nb <- train(diagnosis ~ ., data = moledata_train, method = "nb", trControl = control)
+  model_nb
+
+```
+
+#b)
+```{r warning=FALSE}
+
+  predictions_nb <- predict(model_nb, moledata_test)
+  predictions_nb
+```
+
+#c)
+```{r}
+  confusionMatrix(moledata_test$diagnosis, predictions_nb)
+```
+
+#9-
+
+```{r}
+
+```

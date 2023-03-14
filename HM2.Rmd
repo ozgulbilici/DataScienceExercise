@@ -1,0 +1,150 @@
+---
+title: "Data Science and Analytics 2022"
+author: "Hatice Özgül Bilici"
+date: "2022-11-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r echo=T, results='hide', warning=FALSE, message=FALSE}
+  library(ggplot2)
+  library(tidyverse)
+  library(dplyr)
+  library(plyr)
+  library(caret)
+  library(corrplot)
+  library(ROCR)
+  library(Rcpp)
+  library(gmodels)
+  library(pROC)
+  library(InformationValue)
+  library(factoextra)
+
+```
+
+
+```{r}
+  setwd("C:/Users/ASUS/Desktop/Data")
+```
+# DATA DOWNLOAD
+
+```{r}
+  moledata <- read.csv("mole_dataset.csv",sep=",")
+```
+# EDIT DATA VARIABLES
+
+```{r}
+moledata$image_id <- NULL
+moledata$clin_size_long_diam_mm <- NULL
+moledata$sex <- NULL
+moledata$X <- NULL
+
+```
+
+```{r}
+  moledata$benign_malignant <-  factor(moledata$benign_malignant)
+  summary(moledata)
+```
+# CORRELATION MATRIX
+
+
+```{r}
+
+moledata <- na.omit(moledata)
+cor <- cor(moledata[,3:9])
+cp <- corrplot(cor,method = "ellipse")
+
+```
+
+<br>
+
+There is a strong correlation for dark colors and a weak correlation for light colors.
+
+<br>
+
+# Logistic Regression Model
+
+
+```{r}
+  bdata <- moledata[which(moledata$benign_malignant == "benign"), ] # tüm 1'ler  
+  mdata <- moledata[which(moledata$benign_malignant == "malignant"), ]
+  nrow(bdata)
+  nrow(mdata)
+  
+  
+  set.seed(100)
+  
+  bdata_training_rows <- sample(1:nrow(bdata),  size= 0.60*nrow(mdata))
+  
+  mdata_training_rows <- sample(1:nrow(mdata),  size= 0.60*nrow(mdata))
+  
+  training_b <- bdata[bdata_training_rows, ] 
+  training_m <- mdata[mdata_training_rows, ]
+
+  trainingData <- rbind(training_b, training_m)
+  
+  testData <-rbind(bdata[-bdata_training_rows,],mdata[-mdata_training_rows,])
+
+  table(testData$benign_malignant)
+  
+  
+  LRmod <- glm(benign_malignant~ ., data=trainingData, family=binomial) 
+  summary(LRmod)
+
+```
+<br>
+
+The age_approx, corners, and green variables have a significant impact on mole analysis. However, other variables do not have a significant effect on mole-analysis.
+
+<br>
+# Confusion Matrix
+
+```{r}
+predict <- predict(LRmod , testData ,type="response")
+
+ConfMatrix <- confusionMatrix(testData$benign_malignant , predict)
+ConfMatrix
+
+accurance <- (ConfMatrix[1,1] + ConfMatrix[2,2])/ sum(ConfMatrix)
+```
+
+# ROC Curve
+
+```{r}
+rocMod <- roc(testData$benign_malignant ~ predict)
+
+plot(rocMod)
+
+rocMod
+
+```
+
+# APPLY PCA
+
+```{r }
+
+PCAmole <- prcomp(moledata[,-10] , scale=TRUE,center = TRUE)
+summary(PCAmole)
+
+```
+# DRAW PCA
+
+```{r }
+PCAmole.var <- PCAmole$sd^2
+PCAmolePercent <- PCAmole.var/sum(PCAmole.var) * 100
+dev.new()
+```
+
+```{r }
+ barplot(PCAmolePercent, xlab='PC', ylab='Percent Variance', names.arg=1:length(PCAmolePercent), las=1, ylim=c(0, max(PCAmolePercent)), col='blue')
+
+```
+
+
+```{r }
+fviz_eig(PCAmole)
+```
